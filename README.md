@@ -22,6 +22,21 @@
     - [Start a New Instance From AMI](#start-a-new-instance-from-ami)
     - [Public AMIs](#public-amis)
     - [AMI Storage - Amazon S3](#ami-storage---amazon-s3)
+  - [Choosing The Right EC2 Instance Type](#choosing-the-right-ec2-instance-type)
+    - [RAM (Random Access Memory)](#ram-random-access-memory)
+      - [RAM in EC2](#ram-in-ec2)
+    - [CPU (Central Processing Unit)](#cpu-central-processing-unit)
+      - [CPU in EC2](#cpu-in-ec2)
+    - [IO (Input / Output)](#io-input--output)
+      - [IO in EC2](#io-in-ec2)
+    - [Network](#network)
+      - [Network in EC2](#network-in-ec2)
+    - [GPU](#gpu)
+      - [GPU in EC2](#gpu-in-ec2)
+    - [General Instance (M)](#general-instance-m)
+    - [Burstable Instance (T2)](#burstable-instance-t2)
+      - [CPU Credits](#cpu-credits)
+    - [T2 Unlimited](#t2-unlimited)
 
 # AWS EC2
 
@@ -433,7 +448,9 @@
 
    - A few available commands
      - `http://3.234.177.143:4567/cpu` - Fibonacci
-     - `http://3.234.177.143:4567/ram` - Starts to fill the ram
+     - `http://3.234.177.143:4567/ram` - Starts to fill the RAM
+     - `http://3.234.177.143:4567/ram/info` - RAM status
+     - `http://3.234.177.143:4567/ram/clean` - Clean the RAM
      - `http://3.234.177.143:4567/heath` - Health
      - `http://3.234.177.143:4567/detals` - Returns the details of the request
    - `Ctrl+c` - Stop the application
@@ -527,4 +544,208 @@
 - Your AMI take space and they live in Amazon S3
 - Amazon S3 is a durable, cheap an resilient storage where most of our backups will live (but we wont' see them in the S3 console).
 - By default all our AMI are **private** and **locked** for our account and region.
--
+- We can also make ours AMIs public and share them with other AWS accounts or sell them on the AMI Marketplace.
+
+## Choosing The Right EC2 Instance Type
+
+[Go Back to Contents](#contents)
+
+- Instances have 5 distinct characteristics advertised on the website:
+
+  - The RAM (type, amount, generation)
+  - The CPU (type, make, frequency, generation, number of cores)
+  - The I/O (disk performance, EBS optimizations)
+  - The Network (network bandwidth, network latency)
+  - The Graphical Processing Unit (GPU)
+
+- There are over 50 [types](https://aws.amazon.com/ec2/instance-types/?nc1=h_ls)
+- [EC2Instances.Info](https://ec2instances.info/)
+
+### RAM (Random Access Memory)
+
+[Go Back to Contents](#contents)
+
+- If our EC2 doesn't have enough memory, following errors may occur
+
+  - OutOfMemory error
+  - The RAM will extend to the disk (it's called swapping, and it's way slower)
+
+#### RAM in EC2
+
+[Go Back to Contents](#contents)
+
+- Some EC2 machines come with a lot amount of RAM for cheap
+  - These machines are **R generation** or **X1** (if you have a lot of money)
+  - You should use them if your application requires a lot of memory
+- Monitor memory usage:
+
+  - `free -m` command, display the available memory
+    ![](https://i.imgur.com/FQDDzjJ.png)
+
+  - `top` command, display all the running process
+    ![](https://i.imgur.com/Lt63pcd.png)
+    - To sort the items by memory usage
+      - `Shitf + F`
+      - Then move around with the arrow keys (up and down)
+      - `s` to set to sort by this selected item
+      - `q` to go back
+        ![](https://i.imgur.com/gxn09NM.png)
+        ![](https://i.imgur.com/wI0YAsT.png)
+
+### CPU (Central Processing Unit)
+
+[Go Back to Contents](#contents)
+
+- The central processing unit (CPU) of a computer is a piece of hardware that carries out the instructions of a computer program.
+- It performs the basic arithmetical, logical, and input/output operations of a computer system.
+
+- **When is CPU Used**
+
+  - Anytime your server needs to perform a computation, or an instruction, the CPU will be used.
+  - The CPU is always active, as your computer always processes actions
+  - You can use the **top** command to find the current amount of CPU being used.
+  - If the CPU is not fast enough or does not have enough cores, you'll get:
+
+    - CPU usage of each core at 100%
+    - The server will seriously slow down
+
+  - Adding more cores does not help your application if it's single thread application.
+  - You know if your application is single threaded if **top** shows 100% and you have 2 cores. If it was multi-threaded it would show 200%
+
+#### CPU in EC2
+
+[Go Back to Contents](#contents)
+
+- Some EC2 machines have optimised CPU for frequency or # of cores (vCPU)
+- These machines are **C generation**
+- You should use them if your application requires multi-threading or very fast processor.
+
+### IO (Input / Output)
+
+[Go Back to Contents](#contents)
+
+- I/O (input / output) is the concept of writing or reading from a disk
+- It's measured in the following aspects:
+
+  - Latency
+  - Random I/O performance (random read / writes)
+  - Sequential read and write performance
+
+- **When is IO Used?**
+  - Anytime the application will read and write to the disk, IO will be used
+  - At startup, the OS will read the disk to load settings
+  - You can use the **iostat** command to find the current amount of IO being used
+  - IO are heavily used by database, MapReduce (BigData), websites serving big files / images coming from disk.
+  - If the IO is not large enough, you will get:
+    - Timeouts (some operations can't complete on time)
+    - Slowdowns
+    - Crashes
+  - **Good IO performance will be crucial to ensure the database has always a good performance**
+
+#### IO in EC2
+
+[Go Back to Contents](#contents)
+
+- Some EC2 machines come with attached disks or optimizations to read from EBS volumes
+- These machines are **I generation** - SSD-backed Instance storage optimized for low latency, very high random I/O performance, high sequential read throughput and provide high IOPs at a low cost (good for ElasticSearch, NoSQL databases, analytics workloads...)
+- Other machines are of **H** or of type **D** (MapReduce, HDFS, Big Data, Kafka)
+
+### Network
+
+[Go Back to Contents](#contents)
+
+- Network is the concept of how fast a machine can send and receive information from other machines.
+- It is measured in the following aspects:
+  - Latency
+  - Throughput / Bandwidth
+- Networking in AWS is all done using cables (ethernet / optical fibre)
+
+- **When is Network is Used?**
+  - Anytime your application needs to interact with the web or other server, network will be used.
+  - You can use the **nload** ofr **iftop** command to find the current amount of network being used.
+  - If your network is not fast enough:
+    - Your application may timeout
+    - Latency may be increased
+  - Typical applications that use a lot of network bandwidth
+    - FTP servers
+    - Apache Kafka
+    - Framework that do shuffling such as Apache Spark
+    - Distributed File System
+
+#### Network in EC2
+
+[Go Back to Contents](#contents)
+
+- All EC2 machines come with certain network performances
+- Some EC2 machines have much greater amount of bandwidth reserved to them
+- Measure bandwidth needed for your application
+
+### GPU
+
+[Go Back to Contents](#contents)
+
+- GPU is the graphical processing unit. In a normal computer that provides people a screen, it's used to compute the colour of the pixels on a screen.
+- It is measured in the following aspects:
+  - Number of cores (sometimes well over 1024)
+  - Internal GPU memory
+- **When is GPU Used?**
+  - In AWS, the GPU is used in many different ways:
+    - To process videos, convert a video
+    - To perform computations (finance, fluid dynamics, analysis, etc...)
+    - To perform machine learning (deep learning, speech recognition, etc...)
+
+#### GPU in EC2
+
+[Go Back to Contents](#contents)
+
+- Most EC2 machines do not come with a GPU
+- The ones tha come with GPU are:
+  - P-generation (P3 latest)
+  - G-generation (G3 latest)
+
+### General Instance (M)
+
+[Go Back to Contents](#contents)
+
+- Some intensives come with good balance between:
+  - RAM
+  - CPU
+  - Network
+- These instances are never a bad choice to get started
+- They're the **M generation**
+
+### Burstable Instance (T2)
+
+[Go Back to Contents](#contents)
+
+- AWS has the concept of burstable instances (T2 machines)
+- Burst means that overall, the instance has **OK CPU performance**
+- When the machine need to process something unexpected (a spike in load for example), it can burst, and CPU can be very good.
+- If the machine bursts, it utilizes **burst credits**
+- If all the credits are gone, the CPU becomes **BAD**
+- If the machine stops bursting, credits are accumulated again over time
+- Burstable instances can be amazing to handle unexpected traffic and getting the insurance that it will be handled correctly
+- If your instance consistently runs low on credit, you need to move to a different kind of non-burstable instance.
+
+#### CPU Credits
+
+[Go Back to Contents](#contents)
+
+![](https://i.imgur.com/yzMYvef.png)
+
+- we can monitor or CPU credit on Amazon EC2 Dashboard
+- On `EC2 Dashboard > Instances`
+
+  - Click on your instance that you want to check your cpu usage, then go to **Monitoring** tab
+
+    ![](https://i.imgur.com/OCbcfrI.png)
+
+### T2 Unlimited
+
+[Go Back to Contents](#contents)
+
+- After November 2017, It's possible to have an **unlimited burst credit balance**
+- You pay extra money if you go over your credit balance, but you don't lose performance
+- Overall, it is a new offering, so be careful, costs could got high if you're not monitoring the health of your instances.
+- [T2 Unlimited Docs](https://aws.amazon.com/ec2/pricing/on-demand/)
+- [Unlimited mode for burstable performance instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances-unlimited-mode.html?icmpid=docs_ec2_console)
