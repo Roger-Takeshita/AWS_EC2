@@ -15,10 +15,15 @@
       - [Installing Apache HTTP Manually](#installing-apache-http-manually)
       - [Installing Apache HTTP Using Script](#installing-apache-http-using-script)
     - [EC2 Logs](#ec2-logs)
+  - [EC2 Machine Images (AMI)](#ec2-machine-images-ami)
+    - [Create an AMI](#create-an-ami)
+      - [Config an Image](#config-an-image)
+      - [Create an Image](#create-an-image)
+    - [Start a New Instance From AMI](#start-a-new-instance-from-ami)
+    - [Public AMIs](#public-amis)
+    - [AMI Storage - Amazon S3](#ami-storage---amazon-s3)
 
 # AWS EC2
-
-[Go Back to Summary](#contents)
 
 ## Links
 
@@ -332,3 +337,194 @@
   ![](https://i.imgur.com/D8ruGAE.png)
 
   ![](https://i.imgur.com/1blK8j8.png)
+
+## EC2 Machine Images (AMI)
+
+[Go Back to Contents](#contents)
+
+- As we saw, AWS comes with base images such as:
+  - Ubuntu
+  - Fedora
+  - RedHad
+  - Windows
+- These images can be customized at run tim using **EC2 User Data**
+- It's also possible to create images of our machine so we can use them to build instantiate a new instance (like a recovery disk). Where we have all the drivers updated and softwares installed.
+
+- **Advantages**
+
+  - Pre-installed packages needed
+  - Faster boot time (no need for EC2 User Data at boot time)
+  - Machine comes configured with monitoring / enterprise software
+  - Control of maintenance and updates of AMIs over time
+  - Active Directory Integration out of the box
+  - Installing your app ahead of time (for faster deploys when auto-scaling)
+  - Using someone elses AMI that is optimized for running an APP, DB, etc...
+  - **AMI are built for a specific AWS region**
+
+- On `EC2 Console > Images > AMIs`
+
+  ![](https://i.imgur.com/d9IHMu9.png)
+
+### Create an AMI
+
+[Go Back to Contents](#contents)
+
+- We are going o create a new AMI with the following softwares installed:
+
+  - Ubuntu Updates
+  - Java 8
+  - Java Webserver - An app that we are going to download from [GitHub](https://github.com/simplesteph/ec2-masterclass-sampleapp)
+
+- We are going to use AMI for:
+  - Auto scaling
+  - Load balancing
+  - Troubleshooting and choosing the right EC2 instance type
+
+#### Config an Image
+
+[Go Back to Contents](#contents)
+
+1. Start fresh with a new instance
+2. SSH into this new instance
+3. Install manually
+
+   ```Bash
+     # upgrade machine
+     sudo yum update -y
+
+     # install java 8 jdk
+     sudo yum install -y java-1.8.0-openjdk-devel
+
+     # set java jdk 8 as default
+     sudo /usr/sbin/alternatives --config java
+        # It'll ask to select the version os the java that you want to use
+     sudo /usr/sbin/alternatives --config javac
+        # It'll ask to select the version os the java that you want to use
+
+     # verify java 8 is the default
+     java -version
+
+     # Change dir to root folder
+     cd /home/ec2-user
+
+     # Download app - Java Webserver
+     wget https://github.com/simplesteph/ec2-masterclass-sampleapp/releases/download/v1.0/ec2-masterclass-sample-app.jar
+        # Basically the wget will got github's page, into release page and will download the c2-masterclass-sample-app.jar file (v1.0 Release)
+
+     # Run server
+     java -Xmx700m -jar ec2-masterclass-sample-app.jar
+        # java                           - this command will run java
+        # -Xmx700m                       - will allocate 700MB of memory for this application
+        # -jar                           - to announce where the jar is
+        # ec2-masterclass-sample-app.jar - the file name
+   ```
+
+   ![](https://i.imgur.com/stCbDOB.png)
+
+4. Start Server
+
+   - After running the command, we can see that **Spark has started ...**
+   - And our application is running on port **4567**
+   - If we try to access this webpage on the browser, It won't do nothing. Because we have a security group issue. We need to add the port **4567** to our inbound ports.
+     ![](https://i.imgur.com/8x1NOKn.png)
+
+   - Now if we try again to access our website
+     ![](https://i.imgur.com/5o127s8.png)
+
+   - A few available commands
+     - `http://3.234.177.143:4567/cpu` - Fibonacci
+     - `http://3.234.177.143:4567/ram` - Starts to fill the ram
+     - `http://3.234.177.143:4567/heath` - Health
+     - `http://3.234.177.143:4567/detals` - Returns the details of the request
+   - `Ctrl+c` - Stop the application
+
+5. Automate start server during boot boot time
+
+   - Copy the following command and paste on your terminal
+
+   ```Bash
+     sudo bash -c 'cat << \EOF > /etc/systemd/system/ec2sampleapp.service
+     [Unit]
+     Description=EC2 Sample App
+     After=network.target
+
+     [Service]
+     ExecStart=/usr/bin/java -Xmx700m -jar /home/ec2-user/ec2-masterclass-sample-app.jar
+     Restart=on-failure
+
+     [Install]
+     WantedBy=multi-user.target
+     EOF'
+   ```
+
+   **ATTENTION** Remove the spaces from the beginning of each command if you are copying from this page
+
+6. Set the permissions to start our application across reboots
+
+   - Enable on boot
+
+     - `sudo systemctl enable ec2sampleapp.service`
+
+   - Start now
+     - `sudo systemctl start ec2sampleapp.service`
+
+7. Reboot - after configuring the machine
+
+   - `sudo reboot`
+
+#### Create an Image
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Instances` then `Right Click > Image > Create Image`
+
+  ![](https://i.imgur.com/TK63Ts5.png)
+
+- On `Create Image`
+
+  - Image name: `EC2-Sample-Java-Server`
+  - Image description: `EC2 machine that runs our Java server`
+  - Click on **Create image**
+
+    ![](https://i.imgur.com/atmDO0Z.png)
+
+- On `EC2 Dashboard > Images > AMIs`
+
+  - We can check the status of our image
+  - **Note**: every time we create a new image, the EC2 will reboot. This can prevent corrupting the image.
+
+  ![](https://i.imgur.com/l7mKR9g.png)
+
+### Start a New Instance From AMI
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Images > AMIs`
+
+  - `Right Click > Launch`
+
+    ![](https://i.imgur.com/rrVphmF.png)
+
+  - And then the rest of the process is the same as when we created a new instance manually.
+
+### Public AMIs
+
+[Go Back to Contents](#contents)
+
+- We can get other AMIs from other developer (free)
+- We can also pay for other people's AMI by the hour
+  - Optimised the image
+  - The machine is easy to run and configure
+  - We just rent the "expertise" from the AMI creator
+- AMI can be found and published on the Amazon Marketplace
+  **ATTENTION** don't use an AMI that you don't trust
+  ![](https://i.imgur.com/aGjx1Da.png)
+
+### AMI Storage - Amazon S3
+
+[Go Back to Contents](#contents)
+
+- Your AMI take space and they live in Amazon S3
+- Amazon S3 is a durable, cheap an resilient storage where most of our backups will live (but we wont' see them in the S3 console).
+- By default all our AMI are **private** and **locked** for our account and region.
+-
