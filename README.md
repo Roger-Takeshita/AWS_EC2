@@ -37,6 +37,12 @@
     - [Burstable Instance (T2)](#burstable-instance-t2)
       - [CPU Credits](#cpu-credits)
     - [T2 Unlimited](#t2-unlimited)
+  - [Network and Security](#network-and-security)
+    - [Security Groups Overview](#security-groups-overview)
+  - [IP and CIDR](#ip-and-cidr)
+    - [Private vs Public IP (IPv4)](#private-vs-public-ip-ipv4)
+    - [CIDR](#cidr)
+      - [Understanding CIDR](#understanding-cidr)
 
 # AWS EC2
 
@@ -580,15 +586,20 @@
 - Monitor memory usage:
 
   - `free -m` command, display the available memory
+
     ![](https://i.imgur.com/FQDDzjJ.png)
 
   - `top` command, display all the running process
+
     ![](https://i.imgur.com/Lt63pcd.png)
+
     - To sort the items by memory usage
+
       - `Shitf + F`
       - Then move around with the arrow keys (up and down)
       - `s` to set to sort by this selected item
       - `q` to go back
+
         ![](https://i.imgur.com/gxn09NM.png)
         ![](https://i.imgur.com/wI0YAsT.png)
 
@@ -749,3 +760,112 @@
 - Overall, it is a new offering, so be careful, costs could got high if you're not monitoring the health of your instances.
 - [T2 Unlimited Docs](https://aws.amazon.com/ec2/pricing/on-demand/)
 - [Unlimited mode for burstable performance instances](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances-unlimited-mode.html?icmpid=docs_ec2_console)
+
+## Network and Security
+
+### Security Groups Overview
+
+[Go Back to Contents](#contents)
+
+- Security groups are acting as a `firewall` on EC2 instances
+- They regulate:
+
+  - Access to ports
+  - Authorized of forbidden IP (ranges) - IPV4 and IPV6
+  - Control of inbound network (from other to the instance)
+  - Control of outbound network (from the instance to other)
+
+- Security group:
+  - Can be attached to multiple instances
+  - Locked down to a region / VPC combination
+  - Does live "outside" the EC2 - if traffic is blocked the EC2 instance won't see it
+  - It's good to maintain one separate security group for SSH access
+  - If your application is not accessible (**timeout**), then it's most likely to be a security group issue
+  - If your application gives a **connection refused error**, then it's an application error or it's not launched.
+  - All the inbound traffic is **blocked** by default
+  - All outbound traffic is **authorized** by default
+
+## IP and CIDR
+
+[Go Back to Contents](#contents)
+
+### Private vs Public IP (IPv4)
+
+[Go Back to Contents](#contents)
+
+- **Private IP**
+  - Can only allow certain values from:
+    - `10.0.0.0 ~ 10.255.255.255 (10.0.0.0/8)` <= in big networks
+    - `172.16.0.0 ~ 172.31.255.255 (172.16.0.0/12)` <= default AWS one
+    - `192.168.0.0 ~ 192.168.255.255 (192.168.0.0/16)` <= home networks
+- **Public IP**
+
+  - All the rest of the IP on the internet
+
+- **Security Groups**
+  - work the same way with public and private IP
+
+### CIDR
+
+[Go Back to Contents](#contents)
+
+- It would be good to be able to express a range of IP:
+  - `192.168.0.0 ~ 192.168.0.63 (64 IP)`
+    ![](https://i.imgur.com/M1wBDnL.png)
+- For this, we use CIDR
+  - CIDR is the short for Classless Inter-Domain Routing, an IP addressing scheme that replaces the older system based on classes A, B, and C. A single IP address can be used to designate many unique IP addresses with CIDR. A CIDR IP address looks like a normal IP address except that it ends with a slash followed by a number, called the IP network prefix. CIDR addresses reduce the size of routing tables and make more IP addresses available within organizations.
+  - [CIDR to IPv4 Conversion](https://www.ipaddressguide.com/cidr)
+
+#### Understanding CIDR
+
+[Go Back to Contents](#contents)
+
+- A CIDR has two components
+  - The base IP (XX.XX.XX.XX)
+  - The subnet mask (/26)
+- The base IP represents the first IP contained in the range
+- The subnet masks defines how many bits can change in the IP
+- The subnet mask can take two forms:
+  - `255.255.255.0` - Less common
+  - `/24` - more common
+- The subnet masks basically allows part of the underlying IP to get additional next values from the base IP.
+
+  ```Bash
+    /32 # allows for 1 IP
+    /31 # allows for 2 IP
+    /30 # allows for 4 IP
+    /29 # allows for 8 IP
+    /28 # allows for 16 IP
+    /27 # allows for 32 IP
+    /26 # allows for 64 IP
+    /25 # allows for 128 IP
+    /24 # allows for 256 IP
+    /16 # allows for 65.536 IP
+    /0  # allows for all IP
+  ```
+
+- Quick memo:
+
+  ```Bash
+    /32 # no IP number can change
+    /24 # last IP number can change
+    /16 # last IP two numbers can change
+    /8  # last IP three numbers can change
+    /0  # all IP numbers can change
+  ```
+
+- Example:
+
+  ```Bash
+    192.168.0.0/24 = ?
+      192.168.0.0 ~ 192.168.0.255 # 256 IP
+
+    192.168.0.0/16 = ?
+      192.168.0.0 ~ 192.168.255.255 # 65.536 IP
+
+    134.56.78.123/32 = ?
+      134.56.78.123 # 1 IP
+
+    0.0.0.0/0
+      # All IP
+  ```
