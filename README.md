@@ -15,7 +15,7 @@
       - [Installing Apache HTTP Manually](#installing-apache-http-manually)
       - [Installing Apache HTTP Using Script](#installing-apache-http-using-script)
     - [EC2 Logs](#ec2-logs)
-  - [EC2 Machine Images (AMI)](#ec2-machine-images-ami)
+  - [AMAZON Machine Images (AMI)](#amazon-machine-images-ami)
     - [Create an AMI](#create-an-ami)
       - [Config an Image](#config-an-image)
       - [Create an Image](#create-an-image)
@@ -55,6 +55,20 @@
     - [Exercise](#exercise-1)
   - [Placement Groups](#placement-groups)
     - [Creating a Placement Group](#creating-a-placement-group)
+  - [Load Balancing](#load-balancing)
+    - [Why Use a Load Balancing](#why-use-a-load-balancing)
+    - [Why Use an EC2 Load Balance?](#why-use-an-ec2-load-balance)
+    - [Types of Load Balancer on AWS](#types-of-load-balancer-on-aws)
+    - [Create Classic Load Balancer (v1)](#create-classic-load-balancer-v1)
+    - [Securing Loader Balance](#securing-loader-balance)
+    - [Health Checks](#health-checks)
+      - [Checking If It's Health](#checking-if-its-health)
+    - [Application Load Balancer (v2)](#application-load-balancer-v2)
+    - [Create a Target Group](#create-a-target-group)
+      - [Register Targets to Target Groups](#register-targets-to-target-groups)
+    - [Create an Application Load Balancer (v2)](#create-an-application-load-balancer-v2)
+    - [Load Balancer Listeners](#load-balancer-listeners)
+    - [Network Load Balancer (v2)](#network-load-balancer-v2)
 
 # AWS EC2
 
@@ -168,7 +182,8 @@
 
      - Here we can review all the setting of our machine
      - Then click on **Launch**
-     - ![](https://i.imgur.com/0tG84YA.png)
+
+     ![](https://i.imgur.com/0tG84YA.png)
 
      - It will prompt a popup asking to **select an existing key pair or create a new key pair**
 
@@ -177,6 +192,7 @@
        - **ATTENTION** never share the Key Pair, it contains the private ssh key
 
        * Since we don't have a key pair, we are going to create one
+
          - In my case I named as `EC2-Roger-Takeshita`
          - After that, **Download Key Pair** (`EC2-Roger-Takeshita.pem` File)
            - The `.pem` file, contains our private key that
@@ -192,7 +208,7 @@
            ```
          - Then click on **Launch Instances**
 
-       ![](https://i.imgur.com/kOGzsGI.png)
+         ![](https://i.imgur.com/kOGzsGI.png)
 
   9. Launch Status
 
@@ -204,7 +220,7 @@
 
       - Here we can see that we have an instance running
 
-      ![](https://i.imgur.com/lf2P92y.png)
+        ![](https://i.imgur.com/lf2P92y.png)
 
 ### Stop an Instance
 
@@ -231,9 +247,10 @@
 
   - The Port: `Port 22`
   - Public DNS: `ec2-18-207-122-118.compute-1.amazonaws.com`
+
     - Or through **Public IPv4 address**: `18.207.122.118`
 
-  ![](https://i.imgur.com/D6ERLOo.png)
+      ![](https://i.imgur.com/D6ERLOo.png)
 
   1. Open up the terminal
   2. Type `ssh -i ./path-to-your-private-key ec2-user@your-dns`
@@ -244,14 +261,16 @@
 
        - `Permission 0644 for ./EC2-Roger-Takeshita.pem are too open`
 
-       ![](https://i.imgur.com/cFhDEYk.png)
+         ![](https://i.imgur.com/cFhDEYk.png)
 
      - We need to change the permission to **400** - [Permission 400](https://chmodcommand.com/chmod-400/) means that is only allowed for **owner to read**
        - The command to change the permission is `chmod 400`
          - `chmod 400 EC2-Roger-Takeshita.pem`
          - We only do this one time per `.pem` file
      - After that, we just run the same command again
+
        - `ssh ./EC2-Roger-Takeshita.pem ec2-user@ec2-18-207-122-118.compute-1.amazonaws.com`
+
          ![](https://i.imgur.com/Q4x8WqW.png)
 
   3. Type `exit` to close the connection to your EC2
@@ -294,11 +313,13 @@
 3. On `sg-07d3e6e243ba033d2 - my-first-instance`
 
    - Click on **Edit inbound rules**
+
      ![](https://i.imgur.com/GeqAKK5.png)
 
    - If we delete our **Inbound** rule, this will block all connections
    - In our case we are going to change the Source, from `custom` to `MyIp`. This will automatically get our Ip Address. And only connections from this Ip Address is allowed to connect to your EC2 instance.
    - **NOTE** Home internet changes the Ip weekly, so If your try to connect to your EC2 instance, and the connection times out, probably you are using a different IP.
+
      ![](https://i.imgur.com/n3QGSGF.png)
 
 ### EC2 User Data
@@ -372,7 +393,7 @@
 
   ![](https://i.imgur.com/1blK8j8.png)
 
-## EC2 Machine Images (AMI)
+## AMAZON Machine Images (AMI)
 
 [Go Back to Contents](#contents)
 
@@ -460,9 +481,11 @@
    - After running the command, we can see that **Spark has started ...**
    - And our application is running on port **4567**
    - If we try to access this webpage on the browser, It won't do nothing. Because we have a security group issue. We need to add the port **4567** to our inbound ports.
+
      ![](https://i.imgur.com/8x1NOKn.png)
 
    - Now if we try again to access our website
+
      ![](https://i.imgur.com/5o127s8.png)
 
    - A few available commands
@@ -529,7 +552,7 @@
   - We can check the status of our image
   - **Note**: every time we create a new image, the EC2 will reboot. This can prevent corrupting the image.
 
-  ![](https://i.imgur.com/l7mKR9g.png)
+    ![](https://i.imgur.com/l7mKR9g.png)
 
 ### Start a New Instance From AMI
 
@@ -553,8 +576,10 @@
   - The machine is easy to run and configure
   - We just rent the "expertise" from the AMI creator
 - AMI can be found and published on the Amazon Marketplace
-  **ATTENTION** don't use an AMI that you don't trust
-  ![](https://i.imgur.com/aGjx1Da.png)
+
+  - **ATTENTION** don't use an AMI that you don't trust
+
+    ![](https://i.imgur.com/aGjx1Da.png)
 
 ### AMI Storage - Amazon S3
 
@@ -614,6 +639,7 @@
       - `q` to go back
 
         ![](https://i.imgur.com/gxn09NM.png)
+
         ![](https://i.imgur.com/wI0YAsT.png)
 
 ### CPU (Central Processing Unit)
@@ -823,8 +849,11 @@
 [Go Back to Contents](#contents)
 
 - It would be good to be able to express a range of IP:
+
   - `192.168.0.0 ~ 192.168.0.63 (64 IP)`
+
     ![](https://i.imgur.com/M1wBDnL.png)
+
 - For this, we use CIDR
   - CIDR is the short for Classless Inter-Domain Routing, an IP addressing scheme that replaces the older system based on classes A, B, and C. A single IP address can be used to designate many unique IP addresses with CIDR. A CIDR IP address looks like a normal IP address except that it ends with a slash followed by a number, called the IP network prefix. CIDR addresses reduce the size of routing tables and make more IP addresses available within organizations.
   - [CIDR to IPv4 Conversion](https://www.ipaddressguide.com/cidr)
@@ -917,8 +946,8 @@
 
   - Then click on **Create security group**
 
-  ![](https://i.imgur.com/o705Q2i.png)
-  ![](https://i.imgur.com/b9QEA5m.png)
+    ![](https://i.imgur.com/o705Q2i.png)
+    ![](https://i.imgur.com/b9QEA5m.png)
 
 ### Create a Java Server Security Group
 
@@ -946,8 +975,8 @@
 
   - Then click on **Create security group**
 
-  ![](https://i.imgur.com/KRclZzx.png)
-  ![](https://i.imgur.com/cRzlY12.png)
+    ![](https://i.imgur.com/KRclZzx.png)
+    ![](https://i.imgur.com/cRzlY12.png)
 
 - Now we have two security groups
 
@@ -960,9 +989,10 @@
 - On `EC2 Dashboard > Instances > Instances`
 
   - Right click on the instance that you want to change the security group
+
     - `Right Click > Networking > Change security groups`
 
-  ![](https://i.imgur.com/LgUAJyA.png)
+      ![](https://i.imgur.com/LgUAJyA.png)
 
 - On `Change Security groups` page
 
@@ -974,7 +1004,7 @@
 
     - Click on **Save**
 
-    ![](https://i.imgur.com/oHowgq2.png)
+      ![](https://i.imgur.com/oHowgq2.png)
 
 - On `EC2 Dashboard > Instances > Instances`
 
@@ -982,17 +1012,17 @@
   - There we can see our two security group that we've just added
   - At the bottom of the page we can see our inbound rules
 
-  ![](https://i.imgur.com/d9RCFtC.png)
+    ![](https://i.imgur.com/d9RCFtC.png)
 
 - If we search for `3.235.8.190:4567`
 
   - We can see that everything still works
 
-  ![](https://i.imgur.com/y9eC2l2.png)
+    ![](https://i.imgur.com/y9eC2l2.png)
 
   - By default all the **Outbound** network is open to anywhere. This means tha our instance can access the internet
 
-  ![](https://i.imgur.com/JNBvMxt.png)
+    ![](https://i.imgur.com/JNBvMxt.png)
 
 ### Referencing Other Security Groups
 
@@ -1040,7 +1070,7 @@
 
     - As we can see everything works fine
 
-    ![](https://i.imgur.com/8JZsAoy.png)
+      ![](https://i.imgur.com/8JZsAoy.png)
 
 - On `EC2 Security Group` we are going to remove the **inbound rule** to allow all ips from our `Java Sever Security Group`
 
@@ -1053,7 +1083,7 @@
 
     - It will timeout, because we blocked all internet access to the `Java Sever Security Group`
 
-    ![](https://i.imgur.com/h3JHCNR.png)
+      ![](https://i.imgur.com/h3JHCNR.png)
 
 - On `EC2 Security Group`, Add a new **inbound rule** to allow:
 
@@ -1074,13 +1104,13 @@
 
     - We can access to our first instance using the security group
 
-    ![](https://i.imgur.com/qqNGlXu.png)
+      ![](https://i.imgur.com/qqNGlXu.png)
 
   - But if we try to curl using the **public** IPv4 (`35.153.49.22:4567`)
 
     - It will timeout because our java sever is only allows connections from `Security Group 2`
 
-    ![](https://i.imgur.com/SWKa8Ai.png)
+      ![](https://i.imgur.com/SWKa8Ai.png)
 
 ### Referencing Circular Security Groups
 
@@ -1090,8 +1120,8 @@
 
   - We can also restrict the port range
 
-  ![](https://i.imgur.com/yWM19Tr.png)
-  ![](https://i.imgur.com/uwVDpK9.png)
+    ![](https://i.imgur.com/yWM19Tr.png)
+    ![](https://i.imgur.com/uwVDpK9.png)
 
 ## Elastic IPs
 
@@ -1241,3 +1271,464 @@
   - We will have a new option **Placement group**
 
     ![](https://i.imgur.com/Qcsx7kN.png)
+
+## Load Balancing
+
+[Go Back to Contents](#contents)
+
+- Load balancers are servers that forward internet traffic to multiple servers (EC2 Instances) downstream.
+- [AWS Load Balancer Prices](https://aws.amazon.com/elasticloadbalancing/pricing/)
+- [Application Load Balancer](https://aws.amazon.com/blogs/aws/new-aws-application-load-balancer/)
+- [Network Load Balancer](https://aws.amazon.com/blogs/aws/new-network-load-balancer-effortless-scaling-to-millions-of-requests-per-second/)
+- [Application Vs Network Load Balancer](https://medium.com/containers-on-aws/using-aws-application-load-balancer-and-network-load-balancer-with-ec2-container-service-d0cb0b1d5ae5)
+- [Application Vs Classic Load Balancer](https://cloudacademy.com/blog/application-load-balancer-vs-classic-load-balancer/)
+
+### Why Use a Load Balancing
+
+[Go Back to Contents](#contents)
+
+- Spread load across multiple downstream instances
+- Expose a single point of access (DNS) to your application
+- Seamlessly handle failures of downstream instances
+- Do regulars heath checks to your instances
+- Provide SSL termination (HTTPS) for your websites
+- Enforce stickiness with cookies
+- High availability across zones
+- Separate public traffic from private traffic
+
+### Why Use an EC2 Load Balance?
+
+[Go Back to Contents](#contents)
+
+- An ELB (EC2 Load Balance) is a **managed load balancer**
+  - AWS guarantees that it will be working
+  - AWS takes care of upgrades, maintenance, high availability
+  - AWS provides only a few configuration knobs
+- It costs less to setup our own load balancer but it will be a lot more effort on our end
+- It's integrated with many AWS services
+
+### Types of Load Balancer on AWS
+
+[Go Back to Contents](#contents)
+
+- AWS has **3 kinds of Load Balancer**
+  - Classic Load Balancer (v1 - old generation) - 2009
+  - Application Load Balancer (v2 - new generation) - 2016
+  - Network Load Balancer (v2 - new generation) - 2017
+  - **Overall** it's recommended to use the newer / v2 generation load balancers as they provide more features
+- We can setup **internal** (private) or **external** (public) ELBs
+
+### Create Classic Load Balancer (v1)
+
+[Go Back to Contents](#contents)
+
+- This will cost some money
+- We are going to create a classic load balancer, because many AWS users are still using v1
+
+  ```Bash
+    #                      .--------------------.                .-----------.
+    #           HTTP       |  External Classic  |      HTTP      |    EC2    |
+    #   WWW <------------> |   Load Balancer    | <------------> | Instances |
+    #         Port 80      |       (v1)         |    Port 4567   |           |
+    #                      *--------------------*                *-----------*
+  ```
+
+- On `EC2 Dashboard > Load Balancing > Load Balancers`
+
+  - Create a Classic Load Balance
+
+    - Click on **Create Load Balancer**
+
+      ![](https://i.imgur.com/gcoWVBv.png)
+      ![](https://i.imgur.com/HSOHFmt.png)
+
+    1. Step 1: Define Load Balancer
+
+       - Load Balancer name: `classic-load-balancer`
+       - Create LB Inside: `My Default VPC`
+       - Create an internal load balancer: `unchecked` (because we want a public IP)
+       - For now we are only going to configure `HTTP`
+
+         - Then we have to change the **Instance Port** to **4567**
+         - This means that the load balancer will listen for HTTP request to port **80** and it will forward to our instance on port **4567**
+
+       - Click on **Next: Assign Security Groups**
+
+         ![](https://i.imgur.com/tA54KZq.png)
+
+    2. Step 2: Assign Security Group
+
+       - We could create use an existing security group, but for now we are going to create a new security group
+         - Assign a security group: `Create a new security group`
+         - Security group name: `classic-load-balance-security-group`
+         - Description: `Security group for our classic load balancer`
+       - Then we need to allow `HTTP` on port `80` from any source (`0.0.0.0/0`)
+       - Click on **Next: Configure Security Settings**
+
+         ![](https://i.imgur.com/EY2TlHy.png)
+
+    3. Step 3: Configure Security Settings
+
+       - We are getting a warning because we are not using HTTPS at the moment
+       - Click on **Next: Configure Health Check**
+
+         ![](https://i.imgur.com/msY02X1.png)
+
+    4. Step 4: Configure Health Check
+
+       - Ping Protocol: `HTTP`
+       - Ping Port: `4567`
+       - Ping Path: `/`
+       - Healthy threshold: `5`
+
+         - Number of consecutive health check successes before declaring an EC2 instance healthy.
+
+       - Click on **Next: Add EC2 Instances**
+
+         ![](https://i.imgur.com/5rwPeRk.png)
+
+    5. Step 5: Add EC2 Instances
+
+       - Here is where the magic happens. Now we are going to select the instances that we want to add to this load balancer
+       - Select the `Instance 1` and `Instance 2`
+       - Click on **Next: Add Tags**
+
+         ![](https://i.imgur.com/HKdO9Jb.png)
+
+    6. Step 6: Add Tags
+
+       - Since we are not using tags for now
+       - Click on **Review and Create**
+
+    7. Step 7: Review
+
+       - Click on **Create**
+
+         ![](https://i.imgur.com/tBFXg48.png)
+         ![](https://i.imgur.com/Jy6FT3A.png)
+
+  - Accessing our load balancer
+
+    ![](https://i.imgur.com/Ac3inNs.png)
+
+    - After creating the load balance, we can access our load balancer using the public DNS (`classic-load-balancer-1627616461.us-east-1.elb.amazonaws.com`)
+    - On the **Instances** tab
+
+      - We can check the status of our instances
+
+        ![](https://i.imgur.com/zDC4JdU.png)
+
+  - On the `Browser`
+
+    - We can access our Java application through `classic-load-balancer-1627616461.us-east-1.elb.amazonaws.com`
+    - And if we refresh the page, we can see that our private IP is changing
+
+      ![](https://i.imgur.com/TDbJrji.png)
+      ![](https://i.imgur.com/dmyj2qS.png)
+
+    - Load balancer adds 3 more fields to our headers
+
+      ```Bash
+        X-Forwarded-For: 99.246.120.159
+        X-Forwarded-Port: 80
+        X-Forwarded-Proto: http
+      ```
+
+      ![](https://i.imgur.com/QLt3lyN.png)
+
+### Securing Loader Balance
+
+[Go Back to Contents](#contents)
+
+- After configuring the loader balancer
+- To make more secure our application we can add our loader balancer to the instance security group
+- On `EC2 Dashboard > Network and Security > Security Groups`
+
+  - Edit the `Java Server Security Group`
+
+    - Remove all rules
+    - Add:
+
+      - Types: `Custom TCP`
+      - Port range: `4567`
+      - Source:
+        - `Custom`
+        - `classic-loader-balancer-security-group`
+      - Description: `Classic load balancer`
+
+        ![](https://i.imgur.com/xr1zuQT.png)
+        ![](https://i.imgur.com/xr1zuQT.png)
+
+- After updating the security group
+  - We don't have direct access to our instances (`52.55.186.157:4567`). We only access through our load balancer dns
+
+### Health Checks
+
+[Go Back to Contents](#contents)
+
+- Health Checks are crucial for Load Balancers
+- They enable the load balancer to know if instances it forwards traffic to are available to replay to requests
+- The health check is done on a port and a route (`/health` is common)
+- If the response is not 200, then the instance is unhealthy
+
+#### Checking If It's Health
+
+[Go Back to Contents](#contents)
+
+- We can check if our application is health by using the link `http://classic-load-balancer-1627616461.us-east-1.elb.amazonaws.com/health`
+- To check that we need to update the our url path to point to `/health`
+- On `EC2 Dashboard > Load Balancing > Load Balancers > classic-load-balancer > Health Check`
+
+  - Click on **Edit Health Check**
+
+    ![](https://i.imgur.com/WU0pf0T.png)
+
+- On `Configure Health Check` Pop-up
+
+  - Update the **Ping Path** to `/health`
+  - Update the **Interval** to `10 seconds`
+  - Click on **Save**
+
+    ![](https://i.imgur.com/sCxOCCq.png)
+
+### Application Load Balancer (v2)
+
+[Go Back to Contents](#contents)
+
+- Application load balancer (Layer 7) allow to do:
+  - Load balancing to multiple HTTP applications across machines (target groups)
+  - Load balancing to multiple applications on the same machine (ex. containers)
+  - Load balancing based on route in URL
+  - Load balancing base on hostname in URL
+- Basically, they're awesome for micro services and container-based application (ex. Docker)
+- In comparison, we would need to create one **classic load balancer** per application before. That's very expensive and inefficient.
+
+### Create a Target Group
+
+[Go Back to Contents](#contents)
+
+- The first thing that we need to do is to create a target group
+- On `EC2 Dashboard > Load Balancing > Target Groups`
+
+  - Click on **Create target group**
+
+    ![](https://i.imgur.com/vy3AzMy.png)
+
+- On `Specify group details`
+
+  - Basic configuration
+    - Choose a target type: `Instances`
+    - Target group name: `java-application-target-group`
+    - Protocol: `HTTP` (how we access our instance)
+    - Port: `4567`
+    - VPC: `Default`
+  - Health checks
+
+    - Protocol: `HTTP`
+    - Health check path: `/health`
+    - Advance health check settings:
+      - Port: `Traffic port` (but we could overwrite teh port)
+      - Health threshold: `5`
+      - Unhealthy threshold: `2`
+      - Timeout: `5` seconds
+      - Interval: `10` seconds
+      - Success codes: `200`
+
+  - Click on **Next**
+
+    ![](https://i.imgur.com/lrqDbM8.png)
+    ![](https://i.imgur.com/DQBMv0i.png)
+    ![](https://i.imgur.com/1QQCzpO.png)
+
+  - On `Register targets`
+
+    - Click on **Create target group**
+
+      ![](https://i.imgur.com/pWdz2ZE.png)
+      ![](https://i.imgur.com/rxt3wbB.png)
+
+  - Click on the new target group (`java-application-target-group`) to view the configuration
+
+    - As we can see, we didn't assign a load balancer to it
+
+      ![](https://i.imgur.com/05GqlbS.png)
+
+    - And also, we didn't associate targets to it
+
+      ![](https://i.imgur.com/H1TlWfU.png)
+
+#### Register Targets to Target Groups
+
+[Go Back to Contents](#contents)
+
+- On **Targets** tab
+
+  - Click on **Register targerts**
+
+    ![](https://i.imgur.com/H1TlWfU.png)
+
+- On `Register targets` page
+
+  - Select both instances
+  - Set the port to: `4567`
+  - Click on **Include as pending bellow**
+  - Click on **Register pending targets**
+
+    ![](https://i.imgur.com/Rx0Rnhr.png)
+
+  - Now we have 2 **unused targets**
+
+    ![](https://i.imgur.com/5l5hRl8.png)
+
+### Create an Application Load Balancer (v2)
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Load Balancing > Load Balancers`
+
+  - Create an Application Load Balancer
+
+    - Click on **Create Load Balancer**
+
+      ![](https://i.imgur.com/nS7EEhu.png)
+
+  - On `Select load balancer type` page:
+
+    - Click on **Create** `Application Load Balancer`
+
+      ![](https://i.imgur.com/HSOHFmt.png)
+
+    1. Step 1: Configure Load Balancer
+
+       - name: `application-load-balancer`
+       - Scheme: `internet-facing`
+       - Ip address type: `ipv4`
+       - Listener:
+         - Load Balancer Protocol: `HTTP`
+         - Load Balancer Port: `80`
+       - Availability Zones
+         - Select all zones
+       - Click on **Next: Configure Security Settings**
+
+         ![](https://i.imgur.com/xzg3Q1y.png)
+
+    2. Step 2: Configure Security Settings
+
+       - Just like before, we have a warning saying to configure HTTPS
+       - Click on **Next: Configure Security Groups**
+
+         ![](https://i.imgur.com/msY02X1.png)
+
+    3. Step 3: Configure Security Groups
+
+       - Assign a security group: `Create a new security group`
+       - Security group name: `application-load-balancer-security-group`
+       - Description: `Application security group for our load balancer`
+       - Rule:
+         - Type: `HTTP`
+         - Port: `80`
+         - Source:
+           - `Custom`
+           - `0.0.0.0/0`
+       - Click on **Next: Configure Routing**
+
+         ![](https://i.imgur.com/ZUxQgHg.png)
+
+    4. Step 4: Configure Routing
+
+       - Target group: `Existing target group`
+       - Name: `java-application-target-group`
+       - Click on **Next: Register Targets**
+
+         ![](https://i.imgur.com/z0JF1SD.png)
+
+    5. Step 5: Register Targets
+
+       - Click on **Next: Review**
+
+         ![](https://i.imgur.com/nC5R3MW.png)
+
+    6. Step 6: Review
+
+       - Click on **Create**
+
+         ![](https://i.imgur.com/QLrvvbZ.png)
+         ![](https://i.imgur.com/CHktcxK.png)
+
+  - Update our `Java Sever Security Group`
+
+    - Add the `application-load-balancer-security-group`
+
+      ![](https://i.imgur.com/dixzyMQ.png)
+      ![](https://i.imgur.com/uAO70Q4.png)
+
+  - Accessing our load balancer
+
+    - After creating the load balance, we can access our load balancer using the public DNS (`application-load-balancer-61068661.us-east-1.elb.amazonaws.com`)
+
+      ![](https://i.imgur.com/GIvoa3w.png)
+
+  - On the `Browser`
+
+    - We can access our Java application through `application-load-balancer-61068661.us-east-1.elb.amazonaws.com`
+    - And if we refresh the page, we can see that our private IP is changing
+
+      ![](https://i.imgur.com/iZSFTVc.png)
+      ![](https://i.imgur.com/HsyxAx7.png)
+
+    - Load balancer adds 4 more fields to our headers
+
+      ```Bash
+        X-Amzn-Trace-Id: Root=1-5f88bfdf-05bd5a275de39f277e2f26e4
+        X-Forwarded-For: 99.246.120.159
+        X-Forwarded-Port: 80
+        X-Forwarded-Proto: http
+      ```
+
+      ![](https://i.imgur.com/2e3S1a1.png)
+
+  - On `EC2 Dashboard > Load Balancing > Target Groups`
+
+    - If we check our `java-application-target-group`
+
+      - On **Targets** tab
+
+        - We can see that now we have 2 target with status **healthy**
+
+          ![](https://i.imgur.com/KCuObEi.png)
+
+### Load Balancer Listeners
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Load Balancing > Load Balancers`
+
+  - On **Listeners** tab
+
+    ![](https://i.imgur.com/Cs0bOf6.png)
+
+    - We can setup some rules
+    - The first rule is:
+
+      - If Requests otherwise not routed
+      - Then forward to: java-application-target-group
+
+        ![](https://i.imgur.com/n6zFgYd.png)
+
+    - We could add any kind of rule, and forward to different applications (micro-services)
+
+      ![](https://i.imgur.com/gz0v0Yp.png)
+
+### Network Load Balancer (v2)
+
+[Go Back to Contents](#contents)
+
+- Network load balancers are similar to application load balancers
+- Network load balancers (Layer 4) allow to do:
+  - Operates in a lower lvl (TCP lvl)
+  - Forward **TCP** traffic to your instances
+  - Handle millions of requests per seconds
+  - Support for static IP or elastic IP
+  - Less latency ~100ms (vs 400ms for ALB)
+- Network Load Balancers are mostly used for **extreme performance** and should not be the default load balancer
+- Overall, the creation process is the same as Application Load Balancers
