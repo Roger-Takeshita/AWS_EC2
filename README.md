@@ -43,6 +43,18 @@
     - [Private vs Public IP (IPv4)](#private-vs-public-ip-ipv4)
     - [CIDR](#cidr)
       - [Understanding CIDR](#understanding-cidr)
+  - [Security Group](#security-group)
+    - [Create a SSH Security Group](#create-a-ssh-security-group)
+    - [Create a Java Server Security Group](#create-a-java-server-security-group)
+    - [Update Instance Security Group](#update-instance-security-group)
+    - [Referencing Other Security Groups](#referencing-other-security-groups)
+      - [Exercise](#exercise)
+    - [Referencing Circular Security Groups](#referencing-circular-security-groups)
+  - [Elastic IPs](#elastic-ips)
+    - [Pricing](#pricing)
+    - [Exercise](#exercise-1)
+  - [Placement Groups](#placement-groups)
+    - [Creating a Placement Group](#creating-a-placement-group)
 
 # AWS EC2
 
@@ -219,6 +231,7 @@
 
   - The Port: `Port 22`
   - Public DNS: `ec2-18-207-122-118.compute-1.amazonaws.com`
+    - Or through **Public IPv4 address**: `18.207.122.118`
 
   ![](https://i.imgur.com/D6ERLOo.png)
 
@@ -869,3 +882,362 @@
     0.0.0.0/0
       # All IP
   ```
+
+## Security Group
+
+[Go Back to Contents](#contents)
+
+- On **EC2 Dashboard**
+
+  - On the sidebar menu `EC2 Dashboard > Network and Security > Security Groups`
+
+    ![](https://i.imgur.com/iLGvzzl.png)
+
+### Create a SSH Security Group
+
+[Go Back to Contents](#contents)
+
+- We are creating this security group to be use though the whole company and want to be super secure.
+- Click on **Create security group**
+
+  ![](https://i.imgur.com/GPdkhJP.png)
+
+- On `Create security group` page
+
+  - Security group name: `SSH Security Group`
+  - Description: `Enterprise Wide SSH Security Group`
+  - VPC: `vpc-7a4a7500` (the default)
+  - Inbound rules
+
+    - Add rule
+    - Type: `SSH`
+    - Destination `My IP` (in this case. But for a large company would be CIDR)
+      - `99.246.120.159/32` (`99.246.120.159` is my IP, `/32` only for this IP)
+    - Description - optional: `Roger Takeshita IP`
+
+  - Then click on **Create security group**
+
+  ![](https://i.imgur.com/o705Q2i.png)
+  ![](https://i.imgur.com/b9QEA5m.png)
+
+### Create a Java Server Security Group
+
+[Go Back to Contents](#contents)
+
+- We now need to create a security group for our Java Server
+- Click on **Create security group**
+
+  ![](https://i.imgur.com/GPdkhJP.png)
+
+- On `Create security group` page
+
+  - Security group name: `Java Server Security Group`
+  - Description: `Rules to allow our java server to work`
+  - VPC: `vpc-7a4a7500` (the default)
+  - Inbound rules
+
+    - Add rule
+    - Type: `Custom TCP`
+    - Port Range: `4567`
+    - Destination `Anywhere`
+      - `0.0.0.0/:0` (`0.0.0.0` any IP, `/:0` infinity numbers of ips)
+      - The `::/0` is IPv6. For now we don't need the IPv6.
+    - Description - optional: `Java Sever Anywhere`
+
+  - Then click on **Create security group**
+
+  ![](https://i.imgur.com/KRclZzx.png)
+  ![](https://i.imgur.com/cRzlY12.png)
+
+- Now we have two security groups
+
+  ![](https://i.imgur.com/maPUSGg.png)
+
+### Update Instance Security Group
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Instances > Instances`
+
+  - Right click on the instance that you want to change the security group
+    - `Right Click > Networking > Change security groups`
+
+  ![](https://i.imgur.com/LgUAJyA.png)
+
+- On `Change Security groups` page
+
+  - Remove the old security group (`my-first-instance`)
+
+    ![](https://i.imgur.com/kcnfq4g.png)
+
+  - Then add our two new security groups that we created
+
+    - Click on **Save**
+
+    ![](https://i.imgur.com/oHowgq2.png)
+
+- On `EC2 Dashboard > Instances > Instances`
+
+  - Go to **Security** tab
+  - There we can see our two security group that we've just added
+  - At the bottom of the page we can see our inbound rules
+
+  ![](https://i.imgur.com/d9RCFtC.png)
+
+- If we search for `3.235.8.190:4567`
+
+  - We can see that everything still works
+
+  ![](https://i.imgur.com/y9eC2l2.png)
+
+  - By default all the **Outbound** network is open to anywhere. This means tha our instance can access the internet
+
+  ![](https://i.imgur.com/JNBvMxt.png)
+
+### Referencing Other Security Groups
+
+[Go Back to Contents](#contents)
+
+- From a security group we can reference other security groups
+- It is possible to have a security group rules using other security groups instead of IP ranges (CIDR)
+  - This is for enhanced security in AWS
+  - The security group can even reference itself
+- Use cases
+  - EC2 to EC2 direct communication within security group
+  - Public Load Balance - Private EC2 instance
+  - Having rules more flexible than fixed IP ranges
+
+#### Exercise
+
+[Go Back to Contents](#contents)
+
+- Objectives:
+
+  - Practice EC2 security groups rules by referencing other security groups
+  - See how wen can allow certain instances to talk to our application or not
+  - We'll use 2x EC2 instances in this case
+
+- For this exercise we are going to create a new security group
+- On `Create security group` page
+
+  - Security group name: `Security Group 2`
+  - Description: `Just for the hands on `
+  - VPC: `vpc-7a4a7500` (the default)
+  - And we don't change anything else
+  - Click on **Create security group**
+
+- On `EC2 Dashboard > Instances > Instances`
+
+  - On our new instance we change the security group to use:
+    - `Security Group 2`
+    - `SSH Security Group`
+
+- On `Terminal` SSH into our second instance
+
+  ![](https://i.imgur.com/6UJY0he.png)
+
+  - Curl our first instance using the **public** IPv4 (`35.153.49.22:4567`)
+
+    - As we can see everything works fine
+
+    ![](https://i.imgur.com/8JZsAoy.png)
+
+- On `EC2 Security Group` we are going to remove the **inbound rule** to allow all ips from our `Java Sever Security Group`
+
+  ![](https://i.imgur.com/51tBiKh.png)
+  ![](https://i.imgur.com/1S0yL9N.png)
+
+- On `Terminal`
+
+  - Curl our first instance using the **public** IPv4 (`35.153.49.22:4567`) again
+
+    - It will timeout, because we blocked all internet access to the `Java Sever Security Group`
+
+    ![](https://i.imgur.com/h3JHCNR.png)
+
+- On `EC2 Security Group`, Add a new **inbound rule** to allow:
+
+  - Type: `All TCP`
+  - Protocol: `TCP`
+  - Port range: `0-65535`
+  - Source: `Custom`
+    - `Security Group 2`
+  - Description `Allow instances that have security group 2 to access java server`
+
+    ![](https://i.imgur.com/1YYvhCD.png)
+    ![](https://i.imgur.com/XPlCTor.png)
+    ![](https://i.imgur.com/2ssoZX0.png)
+
+- On `Terminal`
+
+  - Curl our first instance using the **private** IPv4 (`172.31.9.140:4567`)
+
+    - We can access to our first instance using the security group
+
+    ![](https://i.imgur.com/qqNGlXu.png)
+
+  - But if we try to curl using the **public** IPv4 (`35.153.49.22:4567`)
+
+    - It will timeout because our java sever is only allows connections from `Security Group 2`
+
+    ![](https://i.imgur.com/SWKa8Ai.png)
+
+### Referencing Circular Security Groups
+
+[Go Back to Contents](#contents)
+
+- This is useful if we need to instantiate another instance using the `Java Sever Security Group` and we need that both instances talk to each other. Since they don't have `Security Group 2`.
+
+  - We can also restrict the port range
+
+  ![](https://i.imgur.com/yWM19Tr.png)
+  ![](https://i.imgur.com/uwVDpK9.png)
+
+## Elastic IPs
+
+[Go Back to Contents](#contents)
+
+- When we stop and then start an EC2 instance, it can change its public IP
+- If we need to have **fixed public IP** for our instance, we need an Elastic IP
+- An Elastic IP is a public IPv4 IP we won as long as we don't delete it
+- With an Elastic IP address, we can mask the failure of an instance or software by rapidly remapping the address to another instance in our account.
+- We can only have 5 Elastic IP in our account (we can ask AWS to add more)
+- Overall, **try to avoid using Elastic IP**:
+  - They often reflect poor architectural decisions
+    - Instead, we can use a random public IP and register a DNS name to it
+    - Or, we can use a **Load Balancer** and don't use a public IP
+
+### Pricing
+
+[Go Back to Contents](#contents)
+
+- [AWS Elastic IP Pricing Page](https://aws.amazon.com/ec2/pricing/on-demand/#Elastic_IP_Addresses)
+- We don't pay as long as the Elastic IP is attached to a **running** EC2 instance
+- We start paying if the EC2 instance is stopped and the Elastic IP is enabled
+
+### Exercise
+
+[Go Back to Contents](#contents)
+
+- Create an Elastic IP and attach it to an instance
+- Detach it and attach it to another instance
+- **Objective**: The application is still accessible from the same IP but it was using two different EC2 machines
+
+  - For this exercise we need to use 2 instances using the following security groups:
+
+    - `Java Sever Security Group`
+      - Change the **inbound** rules:
+        - Remove all previous rules
+        - Enable all `All traffic` from any IP (`0.0.0.0/0`)
+    - `SSH Security Group`
+
+  - On `Browser` access our instances
+
+    ![](https://i.imgur.com/kvV4AhO.png)
+
+    - As we can see the `Receive Request From` comes from the same source `99.246.120.159`
+    - But the IP of the machine that response to our query has different private IPs
+      - `ip-172-31-30-56.ec2.internal`
+      - `ip-172-31-9-140.ec2.internal`
+
+  - Creating an **Elastic IP**
+
+    - On `EC2 Dashboard > Network and Security > Elastic IPs`
+
+      - Click on **Allocate Elastic IP address**
+        ![](https://i.imgur.com/hCK1CGI.png)
+
+    - On `Allocate Elastic IP address` page
+
+      - Click on **Allocate**
+
+        ![](https://i.imgur.com/ZKDsjE9.png)
+        ![](https://i.imgur.com/J0205L5.png)
+
+      - If we click on the ip that we just created `3.210.171.214` we can see its summary
+
+        ![](https://i.imgur.com/7k4NEZ5.png)
+
+  - Associate an Elastic IP to an Instance
+
+    - On `EC2 Dashboard > Network and Security > Elastic IPs`
+
+      - Associate this new elastic IP to an instance
+
+        - Select the elastic IP
+        - Click on `Actions > Associate Elastic IP address`
+
+          ![](https://i.imgur.com/C6A0UCw.png)
+
+    - Associate an Elastic IP to an Instance An Elastic IP was created: `3.210.171.214`
+
+      - Instance: `i-02adc545b62fc892e`
+        - Choose an Instance - In this case we just choose the first one
+      - Private IP Address: `172.31.9.140`
+      - Allow this Elastic IP address to be reassociated
+      - Click on **Associate**
+
+        ![](https://i.imgur.com/qqSuXxm.png)
+
+  - Test our Elastic IP
+
+    - On `Browser` access our instances (elastic and normal instance)
+
+      - As we can see, we are using different IPs but accessing the same machine
+
+        ![](https://i.imgur.com/imwKiw1.png)
+
+## Placement Groups
+
+[Go Back to Contents](#contents)
+
+- Sometimes we want to control over the EC2 Instance placement strategy
+  - Can be placed together or be placed very far apart from each other
+- The strategy can be defined using placement groups
+- When we create a placement group, we specify one of the following strategies for the groups
+  - **Cluster** - Clusters instances into a low-latency group in a single Availability Zone
+    - This means that our instances will be put together into a low-latency group
+    - Pros:
+      - Great network (10 Gbps bandwidth between instances) - low-latency
+    - Cons:
+      - If the rack fails, all instances fail at the same time
+    - Use case:
+      - Big Data job that needs to complete fast
+      - Application that needs extremely low-latency and high network throughput
+  - **Spread** - Spreads instances across underlying hardware (max 7 instances per group per AZ)
+    - Pros:
+      - Can span across Availability Zones (AZ)
+      - Reduced risk of simultaneous failure
+      - EC2 instances are on different physical hardware
+    - Cons:
+      - Limited to 7 instances per AZ per placement group
+    - Use case:
+      - Application that need to maximize high availability
+      - Cassandra cluster, kafka cluster, Web application that is distributed
+  - **ATTENTION: Not applicable to t2 instances**
+
+### Creating a Placement Group
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Network and Security > Placement Groups`
+
+  - Click on **Create placement group**
+
+    ![](https://i.imgur.com/Q2Zt26H.png)
+
+- On `Create placement group` page
+
+  - Name: `my-cluster-placement-group-for-apache-kafka`
+  - Placement strategy: `Spread` / `Cluster`
+  - Click on **Create group**
+
+    ![](https://i.imgur.com/bsbTSzs.png)
+    ![](https://i.imgur.com/TFnOnWw.png)
+
+- Creating a new instance
+
+  - Now when create a new instance (anything different from a T2 instance)
+  - We will have a new option **Placement group**
+
+    ![](https://i.imgur.com/Qcsx7kN.png)
