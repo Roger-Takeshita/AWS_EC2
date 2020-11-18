@@ -69,6 +69,16 @@
     - [Create an Application Load Balancer (v2)](#create-an-application-load-balancer-v2)
     - [Load Balancer Listeners](#load-balancer-listeners)
     - [Network Load Balancer (v2)](#network-load-balancer-v2)
+  - [Auto Scaling Groups (ASG)](#auto-scaling-groups-asg)
+    - [What's an Auto Scaling Group?](#whats-an-auto-scaling-group)
+    - [ASGs Attributes](#asgs-attributes)
+    - [Setup Auto Scaling](#setup-auto-scaling)
+      - [Launch Configuration](#launch-configuration)
+      - [Create Auto Scaling Groups](#create-auto-scaling-groups)
+    - [Check Auto Scaling](#check-auto-scaling)
+    - [Auto Scaling Alarms](#auto-scaling-alarms)
+      - [Create Scaling Up Policy](#create-scaling-up-policy)
+      - [Create Scale Down Policy](#create-scale-down-policy)
 
 # AWS EC2
 
@@ -1520,19 +1530,19 @@
     - Choose a target type: `Instances`
     - Target group name: `java-application-target-group`
     - Protocol: `HTTP` (how we access our instance)
-    - Port: `4567`
+    - Port: `4567` (this is how our target group will access our instances)
     - VPC: `Default`
   - Health checks
 
     - Protocol: `HTTP`
     - Health check path: `/health`
     - Advance health check settings:
-      - Port: `Traffic port` (but we could overwrite teh port)
+      - Port: `Traffic port` (but we could overwrite the port)
       - Health threshold: `5`
       - Unhealthy threshold: `2`
       - Timeout: `5` seconds
       - Interval: `10` seconds
-      - Success codes: `200`
+      - Success codes: `200` (we can also set ranges of success codes, e.g. `200-299`)
 
   - Click on **Next**
 
@@ -1732,3 +1742,330 @@
   - Less latency ~100ms (vs 400ms for ALB)
 - Network Load Balancers are mostly used for **extreme performance** and should not be the default load balancer
 - Overall, the creation process is the same as Application Load Balancers
+
+## Auto Scaling Groups (ASG)
+
+[Go Back to Contents](#contents)
+
+### What's an Auto Scaling Group?
+
+[Go Back to Contents](#contents)
+
+- In real-life, the load on your websites and application can change
+- In the cloud, you can create an get rid of servers very quickly
+- The goal of an Auto Scaling Group (ASG) is to:
+  - **Scale out** (add EC2 instances) to match an **increased load**
+  - **Scale in** (remove EC2 instances) to match a **decreased load**
+  - Ensure we have a minimal and a maximum number of machines running
+  - Automatically Register new instances to a load balancer
+
+### ASGs Attributes
+
+[Go Back to Contents](#contents)
+
+- Auto Scaling Groups have the following attributes
+  - A launch configuration
+    - AMI + Instance Type
+    - EC2 User Data
+    - EBS Volumes
+    - Security Groups
+    - SSH Key Pairs
+  - Min Size / Max Size / Initial Capacity
+  - Network + Subnets Information
+  - Load Balancer Information
+  - Scaling Policies
+
+### Setup Auto Scaling
+
+#### Launch Configuration
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Auto Scaling > Launch Configurations`
+
+  - Click on **Create launch configuration**
+
+  ![](https://i.imgur.com/6GlbDLh.png)
+
+- On `Create launch configuration` page:
+
+  - Name: `my-first-launch-configuration`
+  - AMI: `EC2-Sample-Java-Server` (use our custom image)
+  - Instance type: `T2.Micro` (free tier)
+
+    ![](https://i.imgur.com/CNF8fOV.png)
+
+  - Additional configuration - Optional
+
+    - Only if we want to execute EC2 data (in our case we don't need)
+    - And if you want to change the IP
+
+    ![](https://i.imgur.com/Dm3Hc8O.png)
+    ![](https://i.imgur.com/NYvhZfl.png)
+
+  - Storage (volumes)
+
+    - Use the default (Root, 8 GB)
+
+    ![](https://i.imgur.com/dtqEDSy.png)
+
+  - Security groups
+
+    - Select an existing security group
+      - Select our:
+        - `SSH Security Group`
+        - `Java Server Security Group`
+
+    ![](https://i.imgur.com/fIVBQwW.png)
+
+  - Key pair (login)
+
+    - Key pair options: `Choose an existing key pair`
+    - Existing key pair: `EC2-Roger-Takeshita`
+    - Select: `I acknowledge that I have access to the selected private key file (EC2-Roger-Takeshita.pem), and that without this file, I won't be able to log into my instance.`
+    - Click on **Create launch configuration**
+
+    ![](https://i.imgur.com/8xsKXQ3.png)
+    ![](https://i.imgur.com/OG8ePw9.png)
+
+#### Create Auto Scaling Groups
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Auto Scaling > Launch Configuration`
+
+  - Select `my-first-launch-configuration`
+  - Click on **Actions > Create Auto Scaling Group**
+
+    ![](https://i.imgur.com/oDX04os.png)
+
+- On `Choose launch template or configuration`
+
+  - Auto Scaling group name: `my-first-application-asg`
+  - Click on **Next**
+
+    ![](https://i.imgur.com/nd7w9h0.png)
+
+- On `Configure settings`
+
+  - VPC: `(default)`
+  - Subnets, select `1a`, `1b`, and `1c`
+  - Click on **Next**
+
+    ![](https://i.imgur.com/aKjxnLW.png)
+
+- On `Configure advanced options`
+
+  - Load balancing
+    - Select: `Enable load balancing`
+      - Choose: `Application Load Balancer or Network Load Balancer`
+      - Choose a target group for your load balancer: `java-application-target-group`
+  - Health check
+
+    - Health check type: `EC2` and `ELB`
+      - `ELB` means if our load balancing sees that our instances is not health, the load balancer will terminate that instance
+    - Health check grace period: `60`
+
+  - Click on **Next**
+
+    ![](https://i.imgur.com/PEIRVYY.png)
+
+- On `Configure option size and scaling policies`
+
+  - Group size
+    - Desired capacity: `2`
+    - Minimum capacity: `2`
+    - Maximum capacity: `2`
+  - Scaling policies: `None` (for now)
+  - Instance scale-in protection
+    - Not enable
+  - Click on **Next**
+
+    ![](https://i.imgur.com/Nct82K2.png)
+
+- On `Add notifications`
+
+  - Click on **Skip to review**
+
+    ![](https://i.imgur.com/NLtBC5w.png)
+
+- On `Review`
+
+  - Review the configuration
+  - Click on **Create Auto Scaling group**
+
+    ![](https://i.imgur.com/lC9BZzD.png)
+    ![](https://i.imgur.com/kyLyGvh.png)
+
+### Check Auto Scaling
+
+[Go Back to Contents](#contents)
+
+- On `EC2 Dashboard > Auto Scaling > Auto Scaling Groups`
+
+  - On **Activity** tab
+
+    - We can check the activity history
+
+      ![](https://i.imgur.com/ow07Ud8.png)
+
+  - On **Instance management** tab
+
+    - We can see that we have 2 instances with status healthy
+
+      ![](https://i.imgur.com/hkdFm5C.png)
+
+- On `EC2 Dashboard > Instances > Instances`
+
+  - We see our 2 new instances running
+
+    ![](https://i.imgur.com/t5ukYJk.png)
+
+- On `EC2 Dashboard > Load Balancing > Load Balancers`
+
+  - We can use the **DNS name** to access our instances
+
+    ![](https://i.imgur.com/YVJOcwr.png)
+
+  - As we can see, we have 2 machines running
+
+    ![](https://i.imgur.com/E6gTvUB.png)
+
+### Auto Scaling Alarms
+
+[Go Back to Contents](#contents)
+
+- It is possible to scale an ASG based on **CloudWatch** alarms
+- An alarm monitors a metric (such as Average CPU)
+- Metrics are computed for the overall ASG instances
+- Based on the alarm:
+
+  - We can create scale-out policies (increase the number of instances)
+  - We can cerate scale-in policies (decrease the number of instances)
+
+- On `EC2 Dashboard > Auto Scaling > Auto Scaling Groups`
+
+  - On **Auto Scaling** tab
+
+    - Click on **Add policy**
+
+      ![](https://i.imgur.com/76BpWoC.png)
+
+#### Create Scaling Up Policy
+
+[Go Back to Contents](#contents)
+
+- On `Create scaling up policy`
+
+  - Policy type: `Step scaling`
+  - Scaling policy name: `scale-out-java-server`
+  - CloudWatch alarm, create an alarm to trigger the policy
+
+    - Click on **Create a CloudWhat alarm**
+
+      ![](https://i.imgur.com/zzLuAo1.png)
+
+    - On `Specify metric and conditions`
+
+      - Metric name: `scale-up-java-server`
+      - AutoScalingGroupName: `my-first-application-asg`
+      - Static: `Average`
+      - Period: `5 minutes`
+      - Conditions:
+        - Threshold type: `Static`
+        - Whenever scale-up-java-serve is... `greater/equal` than... `50`
+      - Click on **Next**
+
+        ![](https://i.imgur.com/khmmoni.png)
+
+    - On `Notification`
+
+      - Remove the notification
+      - Click on **Next**
+
+        ![](https://i.imgur.com/EIftkLO.png)
+
+    - On `Add name and description`
+
+      - Alarm name: `scale-out-java-app-alarm`
+      - Click on **Next**
+
+        ![](https://i.imgur.com/T0CCn6R.png)
+
+    - On `Preview and create`
+
+      - Review the alarm
+      - Click on **Create alarm**
+
+        ![](https://i.imgur.com/FgMqjK5.png)
+        ![](https://i.imgur.com/KSfLzyk.png)
+
+- back to `Create scaling policy`
+
+  - Policy type: `Simple scaling`
+  - Scaling policy name: `scale-out-java-server-policy`
+  - CloudWatch Alarm: `scale-out-java-app-policy`
+  - Take the action: `Add`, `2`, `capacity units` when `50` <= scale-up-java-server <+infinity
+  - Instances need `60` seconds warm up before including in metric
+
+    ![](https://i.imgur.com/SXwKjUj.png)
+
+#### Create Scale Down Policy
+
+[Go Back to Contents](#contents)
+
+- On `Create scaling down policy`
+
+  - Policy type: `Step scaling`
+  - Scaling policy name: `scale-in-java-server`
+  - CloudWatch alarm, create an alarm to trigger the policy
+
+    - Click on **Create a CloudWhat alarm**
+
+      ![](https://i.imgur.com/qqNGlXu.png)
+
+    - On `Specify metric and conditions`
+
+      - Metric name: `scale-down-java-server`
+      - AutoScalingGroupName: `my-first-application-asg`
+      - Static: `Average`
+      - Period: `5 minutes`
+      - Conditions:
+        - Threshold type: `Static`
+        - Whenever scale-up-java-serve is... `lower` than... `10`
+      - Click on **Next**
+
+        ![](https://i.imgur.com/Wum4VbK.png)
+
+    - On `Notification`
+
+      - Remove the notification
+      - Click on **Next**
+
+        ![](https://i.imgur.com/EIftkLO.png)
+
+    - On `Add name and description`
+
+      - Alarm name: `scale-in-java-app-alarm`
+      - Click on **Next**
+
+        ![](https://i.imgur.com/RMS4xie.png)
+
+    - On `Preview and create`
+
+      - Review the alarm
+      - Click on **Create alarm**
+
+        ![](https://i.imgur.com/lWTna4r.png)
+        ![](https://i.imgur.com/DyOEnUB.png)
+
+- back to `Create scaling policy`
+
+  - Policy type: `Simple scaling`
+  - Scaling policy name: `scale-in-java-server-policy`
+  - CloudWatch Alarm: `scale-in-java-app`
+  - Take the action: `Remove`, `1`, `capacity units`
+  - And then wait `60` seconds before allowing another scaling activity
+
+    ![](https://i.imgur.com/SXwKjUj.png)
+    ![](https://i.imgur.com/5Dg7KDp.png)
