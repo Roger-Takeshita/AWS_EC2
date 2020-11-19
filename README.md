@@ -93,6 +93,11 @@
     - [Hands On - Resizing (Only to Increase the Size)](#hands-on---resizing-only-to-increase-the-size)
     - [EBS Volume Snapshoting](#ebs-volume-snapshoting)
       - [Hands On](#hands-on)
+  - [EC2 Running Modes (Cost Saving)](#ec2-running-modes-cost-saving)
+    - [EC2 Reserved Instances](#ec2-reserved-instances)
+    - [EC2 Spot Instances](#ec2-spot-instances)
+      - [Use Cases](#use-cases)
+    - [EC2 Dedicated Hosts](#ec2-dedicated-hosts)
 
 # AWS EC2
 
@@ -2471,3 +2476,53 @@
   - On `Create Volume`, we can change the **Availability Zone** to a different zone
 
     ![](https://i.imgur.com/Bbz8T7e.png)
+
+## EC2 Running Modes (Cost Saving)
+
+[Go Back to Contents](#contents)
+
+- EC2 **On Demand** instances are what we've been using up until now
+- They're great because you can quickly create them and quickly discard them - you only paid for what you use: on-demand
+- They're great when used with **Auto Scaling Groups** ASG
+- But you have other options:
+  - Reserved Instances: discount when you use an EC2 for a long time
+  - Spot instances: cheaper instances you can lose at any time
+  - Dedicated hots: more expensive instances as you reserve hardware
+
+### EC2 Reserved Instances
+
+[Go Back to Contents](#contents)
+
+- Amazon EC2 **Reserved Instances (RI)** provide a significant discount (up to 75%) compared to **On-Demand** pricing and provide a capacity reservation when used in a specific Availability Zone.
+- You have the flexibility to change families, OS types, and tenancies while benefitting from RI pricing you use **Convertible RI** (up to 54% discount)
+- **Schedule RI**: reserve during specific launch periods. For example if you are able to predict demand during the day this is a great option
+- Overall, as soon as you know you will need as instance for a year you should consider using reserved instances
+
+### EC2 Spot Instances
+
+[Go Back to Contents](#contents)
+
+- AWS EC2 Spot Instance are using the spare capacity in AWS cloud and provide you with steep discount (up to 90%)
+- The reason is that if AWS didn't sell that instance, it would just lose money.
+- Therefore, an auction takes place and you have a bid to decide whether or not you get to keep an instance
+- At any point of time, AWS can reclaim (terminate) your instance to the hightest bidder with 2 minutes of notification.
+- You can use Spot Instances with EC2, ECS, CloudFormation, EMR, and other services.
+
+#### Use Cases
+
+[Go Back to Contents](#contents)
+
+- Highly available web application
+- Containerized web services
+- Image rendering
+- Big Data Analytics (Hadoop, Spark, AWS EMR...)
+- Big parallel computations overall
+- **Do not run critical jobs on EC2 if you can't tolerate failures**
+
+### EC2 Dedicated Hosts
+
+[Go Back to Contents](#contents)
+
+- You reserve an entire host on AWS cloud and you launch EC2 instances directly on it.
+- I can help in a BYOL (Bring Your Own Licence) model or when you have strong regulatory, compliance or security requirements.
+- It's overall more expensive and should not use it unless strongly required. You can also reserve dedicated hosts.
