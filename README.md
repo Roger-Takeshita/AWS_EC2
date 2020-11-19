@@ -79,6 +79,20 @@
     - [Auto Scaling Alarms](#auto-scaling-alarms)
       - [Create Scaling Up Policy](#create-scaling-up-policy)
       - [Create Scale Down Policy](#create-scale-down-policy)
+  - [Elastic Block Store (EBS)](#elastic-block-store-ebs)
+    - [What's an EBS Volume?](#whats-an-ebs-volume)
+    - [EBS Volume](#ebs-volume)
+    - [EBS Volume](#ebs-volume-1)
+    - [EBS Volumes Types](#ebs-volumes-types)
+      - [GP2 - High Performance (Recommended)](#gp2---high-performance-recommended)
+      - [IO1 - High Performance](#io1---high-performance)
+      - [ST1 - Large Loads of Data (Often Accessed)](#st1---large-loads-of-data-often-accessed)
+      - [SCI - Large Loads of Data (Not Often Accessed)](#sci---large-loads-of-data-not-often-accessed)
+    - [Hands On - Create Volume - Mount](#hands-on---create-volume---mount)
+    - [Resize EBS Volume](#resize-ebs-volume)
+    - [Hands On - Resizing (Only to Increase the Size)](#hands-on---resizing-only-to-increase-the-size)
+    - [EBS Volume Snapshoting](#ebs-volume-snapshoting)
+      - [Hands On](#hands-on)
 
 # AWS EC2
 
@@ -1573,7 +1587,7 @@
 
 - On **Targets** tab
 
-  - Click on **Register targerts**
+  - Click on **Register targets**
 
     ![](https://i.imgur.com/H1TlWfU.png)
 
@@ -2069,3 +2083,391 @@
 
     ![](https://i.imgur.com/SXwKjUj.png)
     ![](https://i.imgur.com/5Dg7KDp.png)
+
+## Elastic Block Store (EBS)
+
+[Go Back to Contents](#contents)
+
+- It's a way to store data durably
+
+### What's an EBS Volume?
+
+[Go Back to Contents](#contents)
+
+- An EC2 machine loses its root volume (main drive) when it is manually terminated.
+- Unexpected terminations might happen from time to time (AWS would email you)
+- Sometimes, you need a way to store your instance data somewhere
+- **An EBS Volume is a network drive you can attach to your instances while they run**
+- **It allows your instance to persist data**
+
+### EBS Volume
+
+[Go Back to Contents](#contents)
+
+- It's a network drive
+  - It uses the network to communicate the instances, which means there might be a bit of latency
+  - It can detached from an EC2 instance and attached to another one quickly
+- It's locked to an Availability Zone (AZ)
+  - An EBS volume in `us-east-1a` cannot be attached to `us-east-1b`
+- To move data across zones, we have to snapshot it first
+- Have a provisioned capacity (size in GBs, and IOPS) - We have to define the capacity before trying to use it
+  - We are billed by the provision capacity, not the use
+  - We can increase the capacity of the drive over time
+
+### EBS Volume
+
+[Go Back to Contents](#contents)
+
+- EBS Volumes come with **4 types**
+  - `GP2 (SSD)`: General purpose SSD volume that balances price and performance for a wide variety of workloads
+  - `IOI (SSD)`: Highest-performance SDD volume for mission-critical low-latency or high-throughput workloads
+  - `STI (HDD)`: Low cost HDD volume designed for frequently accessed, throughput-intensive workloads
+  - `SCI (HHD)`: Lowest cost HDD volume designed for less frequently accessed workloads
+- EBS Volumes are characterized in `Size` | `Throughput` | `IOPS`
+
+- On `EC2 Dashboard > Instances > Instances`
+
+  - Select one Instance
+  - Go To **Storage** tab
+
+    - There we can see that our instance is an **EBS Volume**
+
+      - Root: `/dev/xvda`
+      - Root device type: `EBS`
+
+        ![](https://i.imgur.com/iK1MWwj.png)
+
+  - If we click on `vol-09cf32ee0837d192e`, we will be redirected to `Elastic Block Store > Volumes`
+
+    - we can see that our **EBS Volume** is:
+
+      - Size: `8 GiB`
+      - Volume Type: `gp2`
+      - IOPS: `100`
+      - Snapshot: `snap-024fe0a6c4aae6a2d`
+      - Availability Zone: `us-east-1c`
+      - State: `in-use` (it's in-use by our EC2 instance)
+
+        ![](https://i.imgur.com/MVX6V11.png)
+
+### EBS Volumes Types
+
+#### GP2 - High Performance (Recommended)
+
+[Go Back to Contents](#contents)
+
+- **Recommended for most workloads**
+- System boot volumes (the machine boots very quickly)
+- Virtual desktops
+- Low-latency interactive apps
+- Development and test environments
+- Sizes: 1 GiB - 16TiB
+- IOPS can burst 10x baseline performance - Max 10.000
+- Max throughput of 160 MiB/s
+
+#### IO1 - High Performance
+
+[Go Back to Contents](#contents)
+
+- Critical business applications that require sustained IOPS performance, or more than 10.000 IOPS or 160 MiB/s of throughput per volume
+- Large database workloads, such as:
+  - MongoDB, Cassandra, Microsoft SQL Server, MSQL, PostgreSQL, Oracle
+  - Sizes: 4 GiB - 16 TiB
+  - IOPS is provisioned (PIOPS) - Max 32.000
+  - Max throughput of 500 MiB/s
+
+#### ST1 - Large Loads of Data (Often Accessed)
+
+[Go Back to Contents](#contents)
+
+- Streaming workloads requiring consistent, fast throughput at a low price
+- Big data, Data warehouses, Log processing
+- Apache Kafka
+- Cannot be a boot volume
+- Sizes: 500 GiB - 16 TiB
+- Max IOPS is 500
+- Max throughput of 500 MiB/s - can burst
+
+#### SCI - Large Loads of Data (Not Often Accessed)
+
+[Go Back to Contents](#contents)
+
+- Throughput-oriented storage for large volumes of data that is infrequently accessed
+- Scenarios where the lowest storage cost is important
+- Cannot be a boot volume
+- Size: 500 GiB - 16TiB
+- Max IOPS is 250
+- Max throughput of 250 MiB/s - can bust
+
+### Hands On - Create Volume - Mount
+
+[Go Back to Contents](#contents)
+
+- Let's create an EBS volume and attach it to our EC2 instance
+- Let's format it with a filesystem ext4
+- Let's start using the volume
+- Detach
+- The re-attach
+- Make sure the volume persists at reboots
+
+- On `EC2 Dashboard > Elastic Block Store > Volumes`
+
+  - Click on **Create Volume**
+
+    ![](https://i.imgur.com/woi7LR2.png)
+
+- On `Create Volume` Page
+
+  - Volume Type: `General Purpose (gp2)`
+  - Size (GiB): `2`
+  - Availability Zone: `us-east-1b` (Choose the same zone of your instance)
+  - Snapshot ID : (leave it blank)
+  - Encryption: (not selected)
+  - Click on **Create Volume**
+
+    ![](https://i.imgur.com/cSDd2dm.png)
+
+    ![](https://i.imgur.com/y67OYeF.png)
+
+    - Click on **vol-06c24a3bf63abbb86** to go to `Volumes`
+
+- On `EC2 Dashboard > Elastic Block Store > Volumes`
+
+  ![](https://i.imgur.com/41tswDz.png)
+
+  - Right click on the new volume, then `Attach Volume`
+
+    ![](https://i.imgur.com/boaRgrw.png)
+
+  - On `Attach Volume` popup
+
+    - Instance: (select the instance that your are currently running)
+    - Device: `/dev/sdf` (use the first device that AWS auto completed)
+    - Click on **Attach**
+
+      ![](https://i.imgur.com/u6MjHPG.png)
+
+    - After attaching the volume, we can see that the status has changed to `in-use`
+
+      ![](https://i.imgur.com/ifZ7Qvl.png)
+
+- On `EC2 Dashboard > Instances > Instances`
+
+  - Select instance on Availability Zone `us-east-1b`
+  - Go To **Storage** tab
+
+    - Now we can see that we have two volumes
+
+      ![](https://i.imgur.com/rHYXIJ6.png)
+
+- On `Terminal`
+
+  - SSH into our `us-east-1b` machine
+  - We are going to execute the following commands
+
+    - volumes
+
+      ```Bash
+        # list the volumes
+        lsblk
+      ```
+
+      ![](https://i.imgur.com/67CC6nw.png)
+
+      - As we can see, right now the volume is just a disk, it's not mounted to anywhere
+
+    - Checking Data
+
+      ```Bash
+        # check if the volume has any data
+        sudo file -s /dev/xvdf
+      ```
+
+      ![](https://i.imgur.com/WbG5btQ.png)
+
+      - If returns `/dev/xvdf: data` this means that the volume is empty and unformatted
+
+    - Formatting Disk
+
+      ```Bash
+        # format the volume as ext4
+        sudo mkfs -t ext4 /dev/xvdf
+      ```
+
+      ![](https://i.imgur.com/bEidmrg.png)
+
+      - Now if we run the same command again `sudo file -s /dev/xvdf` to check the data
+
+        ```Bash
+          sudo file -s /dev/xvdf
+
+          # /dev/xvdf: Linux rev 1.0 ext4 filesystem data, UUID=3554b860-55df-4a69-b521-4b603b3afd4f (extents) (64bit) (large files) (huge files)
+        ```
+
+  ```Bash
+    #!/bin/bash
+
+    # attach the EBS drive from the console to /dev/sdf
+
+    # list the volumes
+    lsblk
+
+    # check if the volume has any data
+    sudo file -s /dev/xvdf
+
+    # format the volume as ext4
+    sudo mkfs -t ext4 /dev/xvdf
+
+    # create a directory
+    sudo mkdir /myexternalvolume
+
+    # mount our EBS to our directory
+    sudo mount /dev/xvdf /myexternalvolume
+
+    # go to the directory and verify size and fre space
+    cd /myexternalvolume
+    sudo touch hello.txt
+    df -h .
+
+    # to unmount
+    umount /dev/xvdf
+
+    # setup EBS remount automatically
+
+    # backup fstab file
+    sudo cp /etc/fstab /etc/fstab.bak
+
+    # add an entry into our fstab file
+    cat /etc/fstab
+
+    sudo yum install -y nano
+    sudo nano /etc/fstab
+    # add this line to the bottom:
+    # /dev/xvdf       /myexternalvolume    ext4    defaults,nofail        0       0
+    # exit nano by doing control + x
+
+    # verify for errors
+    sudo mount -a
+  ```
+
+### Resize EBS Volume
+
+[Go Back to Contents](#contents)
+
+- Feb 2017: You can resize the EBS volumes
+- You can only increase the EBS volumes:
+  - Size (any volume type)
+  - IOPS (only in IO1)
+
+### Hands On - Resizing (Only to Increase the Size)
+
+[Go Back to Contents](#contents)
+
+- Let's resize an EBS volume
+- Let's increase the partition size on the EC2 machine
+- Let's see that the new EBS volume will have the desired capacity
+
+- On `EC2 Dashboard > Elastic Block Store > Volumes`
+
+  - Right click on your volume that you want to change the size
+  - Click on **Modify Volume**
+
+    ![](https://i.imgur.com/3cPiKCl.png)
+
+    ![](https://i.imgur.com/b2t75E3.png)
+
+    ![](https://i.imgur.com/2fnEegf.png)
+
+    ![](https://i.imgur.com/lDjQBsh.png)
+
+- On `Terminal`
+
+  - SSH into the instance
+
+    ```Bash
+      #!/bin/bash
+
+      # see full tutorial at: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/recognize-expanded-volume-linux.html
+
+      # we'll use resize2fs command because we're using ext4 as the device formatting.
+
+      # use lsblk to check the disk size
+      lsblk
+      # xvda    202:0    0   8G  0 disk
+      # └─xvda1 202:1    0   8G  0 part /
+      # xvdf    202:80   0   4G  0 disk /myexternalvolume
+
+      # see how the system sees our drive
+      df -h
+      # Filesystem      Size  Used Avail Use% Mounted on
+      # devtmpfs        474M     0  474M   0% /dev
+      # tmpfs           492M     0  492M   0% /dev/shm
+      # tmpfs           492M  412K  492M   1% /run
+      # tmpfs           492M     0  492M   0% /sys/fs/cgroup
+      # /dev/xvda1      8.0G  1.7G  6.4G  21% /
+      # /dev/xvdf       2.0G  6.0M  1.8G   1% /myexternalvolume
+      # tmpfs            99M     0   99M   0% /run/user/1000
+
+      # resize the partition
+      sudo resize2fs /dev/xvdf
+      # Filesystem at /dev/xvdf is mounted on /myexternalvolume; on-line resizing required
+      # old_desc_blocks = 1, new_desc_blocks = 1
+      # The filesystem on /dev/xvdf is now 1048576 blocks long.
+
+      df -h
+      # Filesystem      Size  Used Avail Use% Mounted on
+      # devtmpfs        474M     0  474M   0% /dev
+      # tmpfs           492M     0  492M   0% /dev/shm
+      # tmpfs           492M  412K  492M   1% /run
+      # tmpfs           492M     0  492M   0% /sys/fs/cgroup
+      # /dev/xvda1      8.0G  1.7G  6.4G  21% /
+      # /dev/xvdf       3.9G  8.0M  3.7G   1% /myexternalvolume
+      # tmpfs            99M     0   99M   0% /run/user/1000
+    ```
+
+### EBS Volume Snapshoting
+
+[Go Back to Contents](#contents)
+
+- EBS Volumes can be backed up using **snapshots**
+- Snapshots only take the actual space of the blocks on the volume
+- If you snapshot a 100GB drive that only has 5 GB of data, then your EBS snapshot will only be 5GB
+- EBS snapshots live in Amazon S3
+- Snapshots are used for:
+  - Backups: ensuring you can save your data in case of catastrophe
+  - Volume migration
+    - Resizing a volume down
+    - Changing the volume type
+
+#### Hands On
+
+[Go Back to Contents](#contents)
+
+- Let's snapshot an EBS drive
+- Let's recreate an EBS drive from another AZ
+- We'll have successfully migrated an EBS drive
+
+- On `EC2 Dashboard > Elastic Block Store > Volumes`
+
+  - Right click on the volume that you want to snapshot
+
+    ![](https://i.imgur.com/sgIdliX.png)
+
+  - Description: (give a name to your snapshot)
+  - Click on **Create Snapshot**
+
+    ![](https://i.imgur.com/nEGFV01.png)
+    ![](https://i.imgur.com/QhgFAeT.png)
+
+- On `EC2 Dashboard > Elastic Block Store > Snapshots`
+
+  ![](https://i.imgur.com/zfddx4I.png)
+
+  - Create a volume from snapshot
+  - Right click on the snapshot
+
+    ![](https://i.imgur.com/M85GwK5.png)
+
+  - On `Create Volume`, we can change the **Availability Zone** to a different zone
+
+    ![](https://i.imgur.com/Bbz8T7e.png)
